@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="LearnTube">
+<meta name="theme-color" content="#0e1a23">
+<title>LearnTube</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --green:#58cc02; --green-dk:#3d8f00;
+  --blue:#1cb0f6;  --blue-dk:#0a8ec4;
+  --red:#ff4b4b;   --yellow:#ffc800;
+  --orange:#ff9600; --purple:#ce82ff;
+  --bg:#0e1a23; --card:#192a35; --card2:#1c3040;
+  --border:#28404f; --text:#eef3f8; --muted:#5f8899;
+  --sat: env(safe-area-inset-top,0px);
+  --sab: env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;background:var(--bg)}
+body{font-family:'Nunito',sans-serif;color:var(--text)}
+#app{height:100%;overflow-y:auto;padding-top:var(--sat);padding-bottom:var(--sab);-webkit-overflow-scrolling:touch}
+.screen{display:none;max-width:500px;margin:0 auto;padding:1.25rem 1rem 6rem}
+.screen.active{display:block}
+
+@keyframes slideUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes popIn{from{opacity:0;transform:scale(.7)}to{opacity:1;transform:scale(1)}}
+@keyframes bob{0%,100%{transform:translateY(0) rotate(-4deg)}50%{transform:translateY(-10px) rotate(4deg)}}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+@keyframes xpFloat{0%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-50px)}}
+
+.card{background:var(--card);border:2px solid var(--border);border-radius:14px;padding:1.4rem}
+.btn{display:block;width:100%;padding:.95rem;border-radius:10px;border:none;font-family:'Nunito',sans-serif;font-size:1rem;font-weight:900;cursor:pointer;transition:transform .1s;text-align:center}
+.btn:active{transform:translateY(2px)}
+.btn-green{background:var(--green);color:#fff;box-shadow:0 4px 0 var(--green-dk)}
+.btn-blue{background:var(--blue);color:#fff;box-shadow:0 4px 0 var(--blue-dk)}
+.btn-ghost{background:transparent;border:2.5px solid var(--border);color:var(--muted);box-shadow:none}
+.btn.disabled{background:var(--border);color:var(--muted);box-shadow:none;cursor:default}
+
+.opt-btn{display:flex;align-items:center;gap:.7rem;width:100%;padding:.8rem .95rem;border-radius:10px;border:2.5px solid var(--border);background:var(--card2);color:var(--text);font-family:'Nunito',sans-serif;font-size:.9rem;font-weight:700;text-align:left;cursor:pointer;margin-bottom:.5rem;transition:border-color .15s,background .15s}
+.opt-btn.sel{border-color:var(--blue);background:rgba(28,176,246,.12)}
+.opt-btn.correct{border-color:var(--green);background:rgba(88,204,2,.13);color:var(--green)}
+.opt-btn.wrong{border-color:var(--red);background:rgba(255,75,75,.1);color:var(--red)}
+.opt-letter{width:26px;height:26px;border-radius:6px;border:2px solid currentColor;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:900;opacity:.7;flex-shrink:0}
+
+.tf-grid{display:grid;grid-template-columns:1fr 1fr;gap:.7rem}
+.tf-btn{display:flex;flex-direction:column;align-items:center;gap:.35rem;padding:1.4rem .75rem;border-radius:12px;border:2.5px solid var(--border);background:var(--card2);color:var(--text);font-family:'Nunito',sans-serif;font-size:.95rem;font-weight:900;cursor:pointer;transition:all .15s}
+.tf-btn.correct{border-color:var(--green);background:rgba(88,204,2,.13);color:var(--green)}
+.tf-btn.wrong{border-color:var(--red);background:rgba(255,75,75,.1);color:var(--red)}
+
+.match-grid{display:grid;grid-template-columns:1fr 1fr;gap:.45rem}
+.match-btn{padding:.65rem .7rem;border-radius:10px;border:2.5px solid var(--border);background:var(--card2);color:var(--text);font-family:'Nunito',sans-serif;font-size:.78rem;font-weight:700;cursor:pointer;text-align:center;line-height:1.3;transition:all .15s}
+.match-btn.sel{border-color:var(--yellow);background:rgba(255,200,0,.1);color:var(--yellow)}
+.match-btn.matched{border-color:var(--green);background:rgba(88,204,2,.1);color:var(--green);cursor:default}
+.match-btn.shaking{animation:shake .4s ease;border-color:var(--red)}
+
+.fitb-sent{background:var(--card2);border:2px solid var(--border);border-radius:10px;padding:1rem;margin-bottom:1rem;font-size:.95rem;font-weight:700;line-height:1.8}
+.fitb-blank{border-bottom:3px solid var(--blue);min-width:80px;display:inline-block;color:var(--blue);font-weight:900}
+.fitb-in{width:100%;background:var(--bg);border:2.5px solid var(--border);border-radius:10px;color:var(--text);font-family:'Nunito',sans-serif;font-size:.95rem;font-weight:700;padding:.85rem .95rem;outline:none;transition:border-color .2s}
+.fitb-in.correct{border-color:var(--green);background:rgba(88,204,2,.07)}
+.fitb-in.wrong{border-color:var(--red);background:rgba(255,75,75,.07)}
+
+.fb{display:flex;gap:.7rem;align-items:flex-start;border-radius:10px;padding:.9rem 1rem;margin-top:1rem;animation:slideUp .3s ease}
+.fb.ok{background:rgba(88,204,2,.1);border:2px solid var(--green)}
+.fb.no{background:rgba(255,75,75,.1);border:2px solid var(--red)}
+.fb-icon{font-size:1.3rem;flex-shrink:0}
+.fb-title{font-weight:900;margin-bottom:2px}
+.fb.ok .fb-title{color:var(--green)}
+.fb.no .fb-title{color:var(--red)}
+.fb-explain{font-size:.78rem;font-weight:600;color:var(--muted);line-height:1.5}
+.fb-xp{margin-left:auto;font-weight:900;color:var(--yellow);white-space:nowrap;align-self:center}
+
+.topbar{display:flex;align-items:center;gap:.7rem;margin-bottom:1.2rem;position:sticky;top:0;z-index:10;background:var(--bg);padding:.5rem 0}
+.tx-btn{background:none;border:none;color:var(--muted);font-size:1.2rem;cursor:pointer;padding:4px}
+.prog-track{flex:1;height:10px;background:var(--card2);border-radius:5px;overflow:hidden}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--green),#9de000);border-radius:5px;transition:width .4s ease}
+.hearts{display:flex;gap:2px}
+.heart{font-size:1rem;transition:all .3s}
+.heart.lost{opacity:.2;filter:grayscale(1)}
+.xp-top{font-size:.75rem;font-weight:900;color:var(--yellow);white-space:nowrap}
+
+.stats-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.6rem;margin-top:1rem}
+.stat-card{background:var(--card);border:2px solid var(--border);border-radius:10px;padding:.85rem;text-align:center}
+.stat-val{font-size:1.55rem;font-weight:900;line-height:1}
+.stat-lbl{font-size:.6rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-top:3px}
+
+.chips{display:flex;flex-wrap:wrap;gap:.35rem;margin-bottom:1rem}
+.chip{background:rgba(28,176,246,.1);border:1.5px solid rgba(28,176,246,.25);border-radius:20px;padding:3px 10px;font-size:.72rem;font-weight:700;color:var(--blue)}
+
+.hist-item{background:var(--card);border:2px solid var(--border);border-radius:10px;padding:.65rem .9rem;margin-bottom:.4rem;display:flex;justify-content:space-between;align-items:center}
+.sec-lbl{font-size:.68rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:.6rem;margin-top:1.3rem}
+
+.results-grid{display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-top:1.3rem}
+.res-card{background:var(--card);border:2px solid var(--border);border-radius:10px;padding:.95rem;text-align:center}
+.res-val{font-size:1.7rem;font-weight:900;line-height:1}
+.res-lbl{font-size:.6rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-top:3px}
+
+.missed-item{background:rgba(255,75,75,.07);border:2px solid rgba(255,75,75,.18);border-radius:10px;padding:.75rem .9rem;margin-bottom:.4rem}
+.missed-q{font-weight:700;margin-bottom:3px;font-size:.82rem}
+.missed-a{font-weight:700;color:var(--green);font-size:.76rem}
+
+.q-badge{display:flex;align-items:center;gap:6px;margin-bottom:.6rem}
+.q-dot{width:7px;height:7px;border-radius:50%}
+.q-lbl{font-size:.62rem;font-weight:800;letter-spacing:.1em;color:var(--muted);text-transform:uppercase}
+.q-text{font-size:1.05rem;font-weight:800;line-height:1.45;margin-bottom:1.2rem}
+
+.intro-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(88,204,2,.1);border:1.5px solid rgba(88,204,2,.25);border-radius:20px;padding:3px 12px;font-size:.68rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--green);margin-bottom:.7rem}
+.notice-box{background:rgba(255,150,0,.08);border:1.5px solid rgba(255,150,0,.2);border-radius:9px;padding:.6rem .85rem;font-size:.76rem;font-weight:700;color:var(--orange);margin-bottom:1rem}
+
+.url-in{width:100%;background:var(--bg);border:2px solid var(--border);border-radius:9px;color:var(--text);font-family:'Nunito',sans-serif;font-size:.88rem;font-weight:600;padding:.75rem .9rem;outline:none;margin-bottom:.85rem;transition:border-color .2s}
+.url-in:focus{border-color:var(--blue)}
+.err-box{font-size:.78rem;font-weight:700;color:var(--red);margin-bottom:.75rem;padding:.55rem .8rem;background:rgba(255,75,75,.08);border-radius:8px;border:1.5px solid rgba(255,75,75,.2)}
+
+.logo-owl{font-size:3.5rem;display:inline-block;animation:bob 2s ease-in-out infinite}
+.logo-title{font-size:2rem;font-weight:900;color:var(--green);margin-top:.3rem}
+.logo-sub{font-size:.78rem;font-weight:700;color:var(--muted);letter-spacing:.07em}
+.logo-wrap{text-align:center;margin-top:1.5rem;animation:popIn .5s cubic-bezier(.34,1.56,.64,1)}
+
+.xp-float{position:fixed;top:25%;left:50%;transform:translateX(-50%);font-size:1.4rem;font-weight:900;color:var(--yellow);pointer-events:none;animation:xpFloat .9s ease forwards;z-index:500}
+
+.install-box{background:var(--card);border:2px solid var(--border);border-radius:12px;padding:1rem 1.1rem;font-size:.82rem;font-weight:600;color:var(--muted);line-height:1.8;margin-top:.6rem}
+.install-box strong{color:var(--text)}
+.install-box .green{color:var(--green)}
+
+#confetti{position:fixed;inset:0;pointer-events:none;z-index:9999}
+</style>
+</head>
+<body>
+<canvas id="confetti"></canvas>
+<div id="app">
+
+  <!-- HOME -->
+  <div id="screen-home" class="screen active">
+    <div class="logo-wrap">
+      <div class="logo-owl">🦉</div>
+      <div class="logo-title">LearnTube</div>
+      <div class="logo-sub">FAA Part 107 · Duolingo Style</div>
+    </div>
+
+    <div class="card" style="margin-top:1.5rem">
+      <label style="font-size:.72rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:.5rem">📺 Paste a YouTube URL</label>
+      <input id="urlInput" type="url" class="url-in" placeholder="https://youtu.be/u3AwQZTbtfc" autocomplete="off" autocorrect="off" spellcheck="false">
+      <div id="urlErr" class="err-box" style="display:none"></div>
+      <button class="btn btn-green" onclick="handleGo()">Start Lesson →</button>
+      <p style="margin-top:.7rem;text-align:center;font-size:.72rem;font-weight:600;color:var(--muted)">Tuned for FAA Part 107 Drone Certification</p>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-val" id="homeStreak" style="color:var(--orange)">0</div><div class="stat-lbl">🔥 Streak</div></div>
+      <div class="stat-card"><div class="stat-val" id="homeXP"     style="color:var(--yellow)">0</div><div class="stat-lbl">⭐ Total XP</div></div>
+      <div class="stat-card"><div class="stat-val" id="homeLessons" style="color:var(--purple)">0</div><div class="stat-lbl">📚 Lessons</div></div>
+    </div>
+
+    <div id="histSection" style="display:none">
+      <div class="sec-lbl">📖 Recent Lessons</div>
+      <div id="histList"></div>
+    </div>
+
+    <div class="sec-lbl" style="margin-top:1.3rem">📲 Install as App</div>
+    <div class="install-box">
+      <strong style="display:block;margin-bottom:.35rem">Add to your home screen:</strong>
+      <span class="green">iPhone Safari:</span> Tap <strong>Share ↑</strong> → <strong>Add to Home Screen</strong><br>
+      <span class="green">Android Chrome:</span> Tap <strong>⋮</strong> → <strong>Add to Home Screen</strong><br>
+      <span style="font-size:.7rem;color:var(--muted);margin-top:.3rem;display:block">Progress saves automatically — works offline too.</span>
+    </div>
+  </div>
+
+  <!-- LESSON -->
+  <div id="screen-lesson" class="screen">
+    <div class="topbar">
+      <button class="tx-btn" onclick="confirmExit()">✕</button>
+      <div class="prog-track"><div class="prog-fill" id="progFill" style="width:0%"></div></div>
+      <div class="hearts" id="heartsEl"></div>
+      <div class="xp-top" id="xpTop">⭐ 0</div>
+    </div>
+    <div id="lessonContent"></div>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="screen-results" class="screen">
+    <div id="resultsContent"></div>
+  </div>
+
+</div>
+<script>
+/* ── SERVICE WORKER (inline blob) ── */
+if ('serviceWorker' in navigator) {
+  const sw = `
+const C='lt-v1';
+self.addEventListener('install',e=>{self.skipWaiting();});
+self.addEventListener('activate',e=>{e.waitUntil(clients.claim());});
+self.addEventListener('fetch',e=>{
+  e.respondWith(
+    caches.open(C).then(cache=>
+      cache.match(e.request).then(r=>{
+        const fresh=fetch(e.request).then(res=>{
+          if(res && res.status===200) cache.put(e.request,res.clone());
+          return res;
+        }).catch(()=>r);
+        return r||fresh;
+      })
+    )
+  );
+});`;
+  const url = URL.createObjectURL(new Blob([sw],{type:'application/javascript'}));
+  navigator.serviceWorker.register(url).catch(()=>{});
+}
+
+/* ── STORAGE ── */
+const KEY = 'learntube_v4';
+function load() {
+  try { return Object.assign({totalXP:0,streak:0,lessons:[],prevQs:[],lastDate:null}, JSON.parse(localStorage.getItem(KEY)||'{}')); }
+  catch(_){ return {totalXP:0,streak:0,lessons:[],prevQs:[],lastDate:null}; }
+}
+function save(d){ try{ localStorage.setItem(KEY,JSON.stringify(d)); }catch(_){} }
+let APP = load();
+
+/* ── QUESTION BANK ── */
+const BANK = [
+  {type:'mc',question:'What is the maximum altitude a sUAS may operate under Part 107 without a waiver?',options:['200 ft AGL','300 ft AGL','400 ft AGL','500 ft AGL'],answer:2,explanation:'Part 107.51 limits sUAS to 400 ft AGL, or within 400 ft of a structure taller than 400 ft.'},
+  {type:'mc',question:'Which airspace classes require ATC authorization before a Part 107 drone flight?',options:['Class G only','Class E and G','Class B, C, D, and surface-level Class E','Class A only'],answer:2,explanation:'Class B, C, D, and surface-level Class E require authorization via LAANC or FAA DroneZone.'},
+  {type:'tf',question:'A remote pilot in command must always yield right-of-way to ALL manned aircraft.',answer:true,explanation:'Part 107.37 requires sUAS to yield right-of-way to ALL other aircraft at all times.'},
+  {type:'tf',question:'You may fly a drone at night without any special equipment under standard Part 107.',answer:false,explanation:'Night operations require anti-collision lighting visible for at least 3 statute miles.'},
+  {type:'mc',question:'What is the minimum flight visibility required for Part 107 operations?',options:['1 statute mile','2 statute miles','3 statute miles','5 statute miles'],answer:2,explanation:'Part 107.51 requires a minimum of 3 statute miles flight visibility from the control station.'},
+  {type:'fitb',sentence:'Drones weighing more than ___ pounds must be registered with the FAA.',answer:'0.55',explanation:'FAA requires registration for sUAS weighing more than 0.55 lbs (250 grams) at takeoff.'},
+  {type:'match',question:'Match each airspace class to its key characteristic.',pairs:[{left:'Class A',right:'18,000 ft MSL+ — IFR only'},{left:'Class B',right:'Busiest airports — clearance required'},{left:'Class D',right:'Smaller towered airports'},{left:'Class G',right:'Uncontrolled — no ATC clearance'}]},
+  {type:'mc',question:'How far below clouds must a sUAS remain in Class G airspace below 1,200 ft AGL?',options:['Clear of clouds','500 ft below','1,000 ft below','2,000 ft below'],answer:0,explanation:'In Class G below 1,200 ft AGL, the sUAS must remain clear of clouds.'},
+  {type:'tf',question:'A remote pilot certificate remains valid indefinitely without renewal.',answer:false,explanation:'Remote pilot certificates must be renewed every 24 months via online recurrent training.'},
+  {type:'mc',question:'What does LAANC stand for?',options:['Low Altitude Authorization and Notification Capability','Licensed Airspace Access and Navigation Control','Low Altitude Aircraft Navigation Center','Licensed Authorization for Commercial drones'],answer:0,explanation:'LAANC provides near real-time airspace authorization for drone flights in controlled airspace.'},
+  {type:'mc',question:'When must a Part 107 accident be reported to the FAA?',options:['Within 24 hours for any incident','Within 10 days for serious injury or property damage over $500','Only if the drone is destroyed','Only for commercial operations'],answer:1,explanation:'Part 107.9 requires accident reports within 10 days for serious injury or property damage exceeding $500.'},
+  {type:'tf',question:'A Part 107 waiver can permit operations that would otherwise violate standard Part 107 rules.',answer:true,explanation:'The FAA may issue waivers for night flight, flight over people, BVLOS, and other operations.'},
+  {type:'mc',question:'What must a remote pilot have accessible during Part 107 operations?',options:['Aircraft logbook','FAA medical certificate','Remote pilot certificate','Aircraft registration only'],answer:2,explanation:'The remote pilot certificate must be accessible (physical or digital) and available for inspection.'},
+  {type:'fitb',sentence:'Under Part 107, the remote PIC must see the sUAS with ___ vision at all times.',answer:'unaided',explanation:'VLOS requires unaided vision — binoculars or zoom cameras do not satisfy this requirement.'},
+  {type:'mc',question:'Which is a remote pilot in command responsibility under Part 107?',options:['Filing a flight plan for every flight','Ensuring the operation is conducted safely','Obtaining an FAA medical certificate','Re-registering the drone for each flight'],answer:1,explanation:'The remote PIC is the final authority on and is directly responsible for safe operation.'},
+  {type:'tf',question:'A sUAS may be operated from a moving vehicle over a sparsely populated area under standard Part 107.',answer:true,explanation:'Part 107.25 allows operation from a moving vehicle over sparsely populated areas without a waiver.'},
+  {type:'mc',question:'What is the maximum groundspeed for a sUAS under Part 107?',options:['55 knots (63 mph)','87 knots (100 mph)','100 knots (115 mph)','No speed limit'],answer:1,explanation:'Part 107.51 limits sUAS to a maximum groundspeed of 87 knots (100 mph).'},
+  {type:'match',question:'Match each weather requirement to its scenario.',pairs:[{left:'3 SM visibility',right:'Minimum for all sUAS flight'},{left:'500 ft below clouds',right:'Class B/C/D/E above 1200 ft AGL'},{left:'Clear of clouds',right:'Class G below 1200 ft AGL'},{left:'Anti-collision light',right:'Required for night operations'}]},
+  {type:'tf',question:'Under Part 107, a drone may fly over moving vehicles on a congested roadway without a waiver.',answer:false,explanation:'Flight over moving vehicles requires a waiver unless the area is sparsely populated.'},
+  {type:'mc',question:'What is prohibited within 3 NM of a stadium during a major sporting event?',options:['All aircraft','Only commercial drones','sUAS operations without authorization','Hobbyist flights only'],answer:2,explanation:'Part 107 prohibits sUAS within 3 NM of a stadium during MLB, NFL, NCAA events 1 hr before to 1 hr after.'},
+  {type:'mc',question:'What does sUAS stand for?',options:['Small Unmanned Aircraft System','Standard Unmanned Aerial System','Small Urban Aerial System','Simple Unmanned Aircraft Sensor'],answer:0,explanation:'sUAS stands for Small Unmanned Aircraft System — the FAA term for drones regulated under Part 107.'},
+  {type:'tf',question:'A visual observer is always required for Part 107 operations.',answer:false,explanation:'A visual observer is optional but may be used when the remote PIC cannot maintain VLOS alone.'},
+  {type:'mc',question:'What is the minimum age to obtain a remote pilot certificate under Part 107?',options:['14 years old','16 years old','18 years old','21 years old'],answer:1,explanation:'Part 107.61 requires the applicant to be at least 16 years of age.'},
+  {type:'fitb',sentence:'The FAA registration number must be displayed on the ___ of the sUAS.',answer:'exterior',explanation:'The FAA registration number must be visible on the exterior of the sUAS for inspection.'},
+  {type:'mc',question:'Which operation requires a Part 107 waiver and is NOT authorized by LAANC?',options:['Flying below the LAANC ceiling in Class D','Night flight before the 2021 rule change','Beyond visual line of sight (BVLOS)','Flying in Class G airspace'],answer:2,explanation:'BVLOS operations always require a Part 107 waiver — LAANC only covers VLOS flights.'},
+];
+
+/* ── LESSON ENGINE ── */
+let lesson, qi, hearts, sessionXP, missed, t0;
+
+function buildLesson() {
+  const sh = [...BANK].sort(()=>Math.random()-.5);
+  const nq = sh.slice(0,7).map((q,i)=>({...q,id:i+1,isReview:false}));
+  let rq = [];
+  if (APP.prevQs.length >= 3) {
+    rq = [...APP.prevQs].sort(()=>Math.random()-.5).slice(0,3).map((q,i)=>({...q,id:nq.length+i+1,isReview:true}));
+  } else {
+    rq = sh.slice(7,10).map((q,i)=>({...q,id:nq.length+i+1,isReview:false}));
+  }
+  return {
+    title:'FAA Part 107 Drone Certification',
+    summary:'Master the essential knowledge for the FAA Part 107 Remote Pilot Certificate exam — airspace, weather minimums, operational rules, and pilot responsibilities.',
+    concepts:['Airspace Classification','Weather Minimums','Remote Pilot Rules','LAANC & Waivers','Drone Registration'],
+    questions:[...nq,...rq]
+  };
+}
+
+/* ── URL ── */
+function extractVid(url){
+  const m=(url||'').match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/))([a-zA-Z0-9_-]{11})/);
+  return m?m[1]:null;
+}
+function handleGo(){
+  const url=document.getElementById('urlInput').value.trim();
+  const err=document.getElementById('urlErr');
+  err.style.display='none';
+  if(!url){err.textContent='Please paste a YouTube URL first.';err.style.display='block';return;}
+  if(!extractVid(url)){err.textContent="Couldn't find a video ID. Try: https://youtu.be/XXXXXXXXXXX";err.style.display='block';return;}
+  startLesson();
+}
+
+/* ── SCREENS ── */
+function show(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-'+id).classList.add('active');
+  document.getElementById('app').scrollTo(0,0);
+}
+
+/* ── HOME ── */
+function refreshHome(){
+  document.getElementById('homeStreak').textContent=APP.streak;
+  document.getElementById('homeXP').textContent=APP.totalXP;
+  document.getElementById('homeLessons').textContent=APP.lessons.length;
+  const hs=document.getElementById('histSection');
+  const hl=document.getElementById('histList');
+  if(APP.lessons.length>0){
+    hs.style.display='block';
+    hl.innerHTML=APP.lessons.slice(-5).reverse().map(l=>`
+      <div class="hist-item">
+        <span style="font-size:.82rem;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:220px">${l.title||'Lesson'}</span>
+        <span style="font-size:.7rem;font-weight:800;color:var(--yellow);margin-left:8px;white-space:nowrap">⭐${l.xp} · ${l.accuracy}%</span>
+      </div>`).join('');
+  } else { hs.style.display='none'; }
+}
+
+/* ── START ── */
+function startLesson(){
+  lesson=buildLesson(); qi=0; hearts=5; sessionXP=0; missed=[]; t0=Date.now();
+  show('lesson');
+  renderStep();
+}
+
+function renderStep(){
+  const total=lesson.questions.length;
+  document.getElementById('progFill').style.width=((qi/(total+1))*100)+'%';
+  document.getElementById('xpTop').textContent='⭐ '+sessionXP;
+  renderHearts();
+  if(qi===0) renderIntro();
+  else renderQ(lesson.questions[qi-1],qi,total);
+}
+
+function renderHearts(){
+  document.getElementById('heartsEl').innerHTML=
+    Array.from({length:5},(_,i)=>`<span class="heart${i>=hearts?' lost':''}">❤️</span>`).join('');
+}
+
+/* ── INTRO ── */
+function renderIntro(){
+  const rc=lesson.questions.filter(q=>q.isReview).length;
+  const nc=lesson.questions.length-rc;
+  document.getElementById('lessonContent').innerHTML=`
+    <div class="card" style="animation:slideUp .4s ease">
+      <div class="intro-badge">🚁 FAA Part 107</div>
+      <div style="font-size:1.25rem;font-weight:900;line-height:1.35;margin-bottom:.7rem">${lesson.title}</div>
+      <div style="font-size:.85rem;font-weight:600;color:var(--muted);line-height:1.6;margin-bottom:1rem">${lesson.summary}</div>
+      <div class="chips">${lesson.concepts.map(c=>`<span class="chip">${c}</span>`).join('')}</div>
+      <div class="notice-box">🎯 ${nc} new questions${rc>0?` + 🔁 ${rc} recall`:''} · ❤️ 5 hearts</div>
+      <button class="btn btn-green" onclick="nextStep()">Let's Go! →</button>
+    </div>`;
+}
+
+/* ── QUESTION ── */
+const LABELS={mc:'MULTIPLE CHOICE',tf:'TRUE OR FALSE',fitb:'FILL IN BLANK',match:'MATCHING'};
+function badge(q){
+  return `<div class="q-badge">
+    <div class="q-dot" style="background:${q.isReview?'var(--orange)':'var(--blue)'}"></div>
+    <span class="q-lbl">${q.isReview?'🔁 RECALL':'📝 NEW'} · ${LABELS[q.type]||q.type} · Q${qi}/${lesson.questions.length}</span>
+  </div>`;
+}
+
+function renderQ(q){
+  if(q.type==='mc')   renderMC(q);
+  else if(q.type==='tf')   renderTF(q);
+  else if(q.type==='fitb') renderFITB(q);
+  else if(q.type==='match') renderMatch(q);
+}
+
+/* MC */
+let _sel=null;
+function renderMC(q){
+  _sel=null;
+  document.getElementById('lessonContent').innerHTML=`
+    <div class="card" style="animation:slideUp .3s ease">
+      ${badge(q)}
+      <div class="q-text">${q.question}</div>
+      <div id="opts">
+        ${q.options.map((o,i)=>`<button class="opt-btn" id="o${i}" onclick="pickMC(${i})"><span class="opt-letter">${'ABCD'[i]}</span>${o}</button>`).join('')}
+      </div>
+      <button class="btn disabled" id="ckBtn" onclick="checkMC()" disabled>Check Answer</button>
+      <div id="fb"></div>
+    </div>`;
+}
+function pickMC(i){
+  if(document.getElementById('ckBtn').classList.contains('btn-blue'))return;
+  _sel=i;
+  document.querySelectorAll('.opt-btn').forEach((b,j)=>b.classList.toggle('sel',j===i));
+  const b=document.getElementById('ckBtn');
+  b.disabled=false; b.className='btn btn-green';
+}
+function checkMC(){
+  if(_sel===null)return;
+  const q=lesson.questions[qi-1];
+  document.querySelectorAll('.opt-btn').forEach((b,i)=>{
+    b.disabled=true;
+    if(i===q.answer)b.classList.add('correct');
+    else if(i===_sel)b.classList.add('wrong');
+  });
+  document.getElementById('ckBtn').style.display='none';
+  handleResult(_sel===q.answer,q);
+}
+
+/* TF */
+function renderTF(q){
+  document.getElementById('lessonContent').innerHTML=`
+    <div class="card" style="animation:slideUp .3s ease">
+      ${badge(q)}
+      <div class="q-text">${q.question}</div>
+      <div class="tf-grid">
+        <button class="tf-btn" id="tft" onclick="checkTF(true)"><span style="font-size:1.7rem">✅</span>TRUE</button>
+        <button class="tf-btn" id="tff" onclick="checkTF(false)"><span style="font-size:1.7rem">❌</span>FALSE</button>
+      </div>
+      <div id="fb"></div>
+    </div>`;
+}
+function checkTF(v){
+  const q=lesson.questions[qi-1];
+  document.getElementById('tft').disabled=document.getElementById('tff').disabled=true;
+  document.getElementById(q.answer?'tft':'tff').classList.add('correct');
+  if(v!==q.answer) document.getElementById(v?'tft':'tff').classList.add('wrong');
+  handleResult(v===q.answer,q);
+}
+
+/* FITB */
+function renderFITB(q){
+  const parts=q.sentence.split('___');
+  const sent=parts.map((p,i,a)=>p+(i<a.length-1?'<span class="fitb-blank">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>':'')).join('');
+  document.getElementById('lessonContent').innerHTML=`
+    <div class="card" style="animation:slideUp .3s ease">
+      ${badge(q)}
+      <div class="q-text">Fill in the blank:</div>
+      <div class="fitb-sent">${sent}</div>
+      <input id="fitbIn" class="fitb-in" type="text" placeholder="Type your answer…" autocorrect="off" autocapitalize="off">
+      <div style="margin-top:1rem"><button class="btn btn-green" onclick="checkFITB()">Check Answer</button></div>
+      <div id="fb"></div>
+    </div>`;
+  setTimeout(()=>{
+    const inp=document.getElementById('fitbIn');
+    if(inp){inp.focus();inp.addEventListener('keydown',e=>{if(e.key==='Enter')checkFITB();});}
+  },100);
+}
+function checkFITB(){
+  const inp=document.getElementById('fitbIn');
+  if(!inp||!inp.value.trim())return;
+  const q=lesson.questions[qi-1];
+  const u=inp.value.trim().toLowerCase(), a=(q.answer||'').toLowerCase();
+  const ok=u===a||a.includes(u)||u.includes(a.split(' ')[0]);
+  inp.disabled=true; inp.classList.add(ok?'correct':'wrong');
+  inp.previousElementSibling&&(inp.nextElementSibling.style.display='none');
+  document.querySelector('#lessonContent .btn.btn-green')&&(document.querySelector('#lessonContent button[onclick="checkFITB()"]').style.display='none');
+  handleResult(ok,q,ok?null:`Correct answer: "${q.answer}"`);
+}
+
+/* MATCH */
+let MS={};
+function renderMatch(q){
+  const pairs=q.pairs.map((p,i)=>({...p,id:i}));
+  const L=[...pairs].sort(()=>Math.random()-.5);
+  const R=[...pairs].sort(()=>Math.random()-.5);
+  MS={matched:[],sel:null,pairs:q.pairs,wrongFired:false};
+  document.getElementById('lessonContent').innerHTML=`
+    <div class="card" style="animation:slideUp .3s ease">
+      ${badge(q)}
+      <div class="q-text">${q.question}</div>
+      <div class="match-grid">
+        ${L.map(p=>`<button class="match-btn" id="ml${p.id}" onclick="pickMatch('l',${p.id})">${p.left}</button>`).join('')}
+        ${R.map(p=>`<button class="match-btn" id="mr${p.id}" onclick="pickMatch('r',${p.id})">${p.right}</button>`).join('')}
+      </div>
+      <p style="margin-top:.5rem;font-size:.7rem;font-weight:700;color:var(--muted);text-align:center">Tap one from each column to match</p>
+      <div id="fb"></div>
+    </div>`;
+}
+function pickMatch(side,id){
+  if(MS.matched.includes(id))return;
+  if(!MS.sel){
+    MS.sel={side,id};
+    document.getElementById((side==='l'?'ml':'mr')+id).classList.add('sel');
+    return;
+  }
+  if(MS.sel.side===side){
+    document.getElementById((MS.sel.side==='l'?'ml':'mr')+MS.sel.id).classList.remove('sel');
+    MS.sel={side,id};
+    document.getElementById((side==='l'?'ml':'mr')+id).classList.add('sel');
+    return;
+  }
+  const lId=MS.sel.side==='l'?MS.sel.id:id;
+  const rId=MS.sel.side==='r'?MS.sel.id:id;
+  document.getElementById('ml'+MS.sel.id)?.classList.remove('sel');
+  document.getElementById('mr'+MS.sel.id)?.classList.remove('sel');
+  MS.sel=null;
+  if(lId===rId){
+    MS.matched.push(lId);
+    document.getElementById('ml'+lId)?.classList.add('matched');
+    document.getElementById('mr'+rId)?.classList.add('matched');
+    if(MS.matched.length===MS.pairs.length){
+      handleResult(true,lesson.questions[qi-1]);
+    }
+  } else {
+    const lb=document.getElementById('ml'+lId),rb=document.getElementById('mr'+rId);
+    lb?.classList.add('shaking'); rb?.classList.add('shaking');
+    setTimeout(()=>{lb?.classList.remove('shaking');rb?.classList.remove('shaking');},500);
+    if(!MS.wrongFired){MS.wrongFired=true;loseHeart();}
+  }
+}
+
+/* ── RESULT HANDLING ── */
+function handleResult(correct,q,extraNote){
+  const expl=(q.explanation||'')+(extraNote?' '+extraNote:'');
+  showFB(correct,expl);
+  if(correct){
+    sessionXP+=20;
+    document.getElementById('xpTop').textContent='⭐ '+sessionXP;
+    floatXP('+20 ⭐');
+    if(!q.isReview){APP.prevQs=[...APP.prevQs,q].slice(-15);save(APP);}
+  } else {
+    missed.push({q:q.question,correct:expl});
+    loseHeart();
+  }
+}
+
+function showFB(ok,explain){
+  const isLast=qi>=lesson.questions.length;
+  document.getElementById('fb').innerHTML=`
+    <div class="fb ${ok?'ok':'no'}">
+      <span class="fb-icon">${ok?'✅':'❌'}</span>
+      <div>
+        <div class="fb-title">${ok?'Correct! 🎉':'Not quite…'}</div>
+        <div class="fb-explain">${explain}</div>
+      </div>
+      ${ok?'<div class="fb-xp">+20 ⭐</div>':''}
+    </div>
+    <button class="btn btn-blue" style="margin-top:1rem" onclick="nextStep()">${isLast?'🏁 Finish Lesson':'Continue →'}</button>`;
+}
+
+function loseHeart(){
+  hearts=Math.max(0,hearts-1);
+  renderHearts();
+  if(hearts===0)setTimeout(endLesson,700);
+}
+
+function floatXP(t){
+  const el=document.createElement('div');
+  el.className='xp-float'; el.textContent=t;
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(),900);
+}
+
+function nextStep(){
+  _sel=null; qi++;
+  if(qi>lesson.questions.length||hearts<=0) endLesson();
+  else renderStep();
+}
+
+function confirmExit(){
+  if(confirm('Exit lesson? Progress will be lost.')){refreshHome();show('home');}
+}
+
+/* ── END ── */
+function endLesson(){
+  const total=lesson.questions.length;
+  const acc=Math.round(((total-missed.length)/total)*100);
+  const elapsed=Math.round((Date.now()-t0)/1000);
+
+  const today=new Date().toDateString();
+  const yesterday=new Date(Date.now()-86400000).toDateString();
+  if(APP.lastDate!==today){
+    if(APP.lastDate!==yesterday) APP.streak=0;
+    APP.streak++;
+    APP.lastDate=today;
+  }
+  APP.totalXP+=sessionXP;
+  APP.lessons.push({title:lesson.title,xp:sessionXP,accuracy:acc,date:new Date().toISOString()});
+  save(APP);
+
+  const perfect=acc===100;
+  if(perfect) confetti();
+
+  document.getElementById('resultsContent').innerHTML=`
+    <div style="text-align:center;margin-top:1.5rem;animation:popIn .5s cubic-bezier(.34,1.56,.64,1)">
+      <div style="font-size:4.5rem">${perfect?'🏆':acc>=70?'🦉':'😅'}</div>
+      <div style="font-size:1.6rem;font-weight:900;color:${perfect?'var(--yellow)':acc>=70?'var(--green)':'var(--text)'};margin-top:.3rem">
+        ${perfect?'Perfect! 🎯':acc>=70?'Great Work! 💪':'Keep Practicing! 📚'}
+      </div>
+      <div style="font-size:.85rem;font-weight:700;color:var(--muted);margin-top:.2rem">${lesson.title}</div>
+      <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,200,0,.1);border:2px solid rgba(255,200,0,.25);border-radius:30px;padding:7px 18px;font-size:1.2rem;font-weight:900;color:var(--yellow);margin-top:.9rem">
+        ⭐ +${sessionXP} XP earned
+      </div>
+    </div>
+    <div class="results-grid">
+      <div class="res-card"><div class="res-val" style="color:var(--green)">${acc}%</div><div class="res-lbl">Accuracy</div></div>
+      <div class="res-card"><div class="res-val" style="color:var(--orange)">${APP.streak}</div><div class="res-lbl">🔥 Streak</div></div>
+      <div class="res-card"><div class="res-val" style="color:var(--red)">${hearts}</div><div class="res-lbl">❤️ Hearts Left</div></div>
+      <div class="res-card"><div class="res-val" style="color:var(--blue)">${elapsed}s</div><div class="res-lbl">⏱ Time</div></div>
+    </div>
+    ${missed.length?`
+      <div class="sec-lbl" style="margin-top:1.3rem">❌ Review These (${missed.length})</div>
+      ${missed.map(m=>`<div class="missed-item"><div class="missed-q">${m.q}</div><div class="missed-a">✅ ${m.correct}</div></div>`).join('')}
+    `:''}
+    <div style="margin-top:1.4rem;display:flex;flex-direction:column;gap:.5rem">
+      <button class="btn btn-green" onclick="goHome()">🏠 Back to Home</button>
+      <button class="btn btn-blue" onclick="retry()">↩ Try Again (new shuffle)</button>
+    </div>`;
+  show('results');
+}
+
+function goHome(){ refreshHome(); show('home'); }
+function retry(){ startLesson(); }
+
+/* ── CONFETTI ── */
+function confetti(){
+  const c=document.getElementById('confetti'),ctx=c.getContext('2d');
+  c.width=window.innerWidth; c.height=window.innerHeight;
+  const cols=['#58cc02','#ffc800','#1cb0f6','#ff4b4b','#ce82ff','#ff9600'];
+  const p=Array.from({length:100},()=>({x:Math.random()*c.width,y:Math.random()*-200,r:Math.random()*5+3,d:Math.random()*60+20,col:cols[Math.floor(Math.random()*6)],t:Math.random()*8-4,ts:Math.random()*.05+.03}));
+  let f=0,raf;
+  function draw(){ctx.clearRect(0,0,c.width,c.height);p.forEach(x=>{ctx.beginPath();ctx.lineWidth=x.r;ctx.strokeStyle=x.col;ctx.moveTo(x.x+x.t+x.r/3,x.y);ctx.lineTo(x.x+x.t,x.y+x.t+x.r);ctx.stroke();x.y+=Math.cos(f+x.d)+2.5;x.x+=Math.sin(f)*1.5;x.t+=x.ts;});f+=.01;if(f<5)raf=requestAnimationFrame(draw);else ctx.clearRect(0,0,c.width,c.height);}
+  draw();
+}
+
+/* ── INIT ── */
+refreshHome();
+</script>
+</body>
+</html>
